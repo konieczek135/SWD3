@@ -1,2 +1,2 @@
-# swd3.github.io
+# SWD3
 System wspomagania dowodzenia policji
