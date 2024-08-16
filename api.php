@@ -2,15 +2,13 @@
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 
-$servername = "localhost"; // Zmień na nazwę swojego serwera
-$username = "root"; // Zmień na swoją nazwę użytkownika
-$password = ""; // Zmień na swoje hasło
-$dbname = "your_database_name"; // Zmień na nazwę swojej bazy danych
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "your_database_name";
 
-// Utworzenie połączenia z bazą danych
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Sprawdzenie połączenia
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
@@ -56,8 +54,8 @@ function getPatrols($conn) {
 }
 
 function updatePatrolStatus($conn) {
-    $kryptonim = $_GET['kryptonim'] ?? '';
-    $status = $_GET['status'] ?? '';
+    $kryptonim = $_POST['kryptonim'] ?? '';
+    $status = $_POST['status'] ?? '';
 
     if ($kryptonim && $status) {
         $sql = "UPDATE patrole SET status = ? WHERE kryptonim = ?";
