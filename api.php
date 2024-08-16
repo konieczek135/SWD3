@@ -2,10 +2,10 @@
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "your_database_name";
+$servername = "sql.10.svpj.link";
+$username = "db_105690db_105690";
+$password = "NVzd08ODhiBV";
+$dbname = "db_105690";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
