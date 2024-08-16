@@ -10,7 +10,8 @@ $dbname = "your_database_name";
 $conn = new mysqli($servername, $username, $password, $dbname);
 
 if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+    echo json_encode(["error" => "Connection failed: " . $conn->connect_error]);
+    exit();
 }
 
 $action = $_GET['action'] ?? '';
@@ -42,6 +43,11 @@ function getPatrols($conn) {
     $sql = "SELECT kryptonim FROM patrole";
     $result = $conn->query($sql);
 
+    if ($result === false) {
+        echo json_encode(["error" => "Query failed: " . $conn->error]);
+        return;
+    }
+
     if ($result->num_rows > 0) {
         $patrols = [];
         while ($row = $result->fetch_assoc()) {
@@ -60,6 +66,11 @@ function updatePatrolStatus($conn) {
     if ($kryptonim && $status) {
         $sql = "UPDATE patrole SET status = ? WHERE kryptonim = ?";
         $stmt = $conn->prepare($sql);
+        if ($stmt === false) {
+            echo json_encode(["error" => "Prepare failed: " . $conn->error]);
+            return;
+        }
+
         $stmt->bind_param("ss", $status, $kryptonim);
         $stmt->execute();
 
@@ -82,6 +93,11 @@ function sendMessage($conn) {
     if ($nadawca && $odbiorca && $tresc) {
         $sql = "INSERT INTO komunikaty (nadawca, odbiorca, tresc) VALUES (?, ?, ?)";
         $stmt = $conn->prepare($sql);
+        if ($stmt === false) {
+            echo json_encode(["error" => "Prepare failed: " . $conn->error]);
+            return;
+        }
+
         $stmt->bind_param("sss", $nadawca, $odbiorca, $tresc);
         $stmt->execute();
 
@@ -102,6 +118,11 @@ function getMessages($conn) {
     if ($kryptonim) {
         $sql = "SELECT * FROM komunikaty WHERE odbiorca = ?";
         $stmt = $conn->prepare($sql);
+        if ($stmt === false) {
+            echo json_encode(["error" => "Prepare failed: " . $conn->error]);
+            return;
+        }
+
         $stmt->bind_param("s", $kryptonim);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -127,6 +148,11 @@ function getInterwencje($conn) {
     if ($kryptonim) {
         $sql = "SELECT * FROM interwencje WHERE kryptonim = ?";
         $stmt = $conn->prepare($sql);
+        if ($stmt === false) {
+            echo json_encode(["error" => "Prepare failed: " . $conn->error]);
+            return;
+        }
+
         $stmt->bind_param("s", $kryptonim);
         $stmt->execute();
         $result = $stmt->get_result();
