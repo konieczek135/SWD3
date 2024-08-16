@@ -1,125 +1,150 @@
 <?php
-header('Content-Type: application/json');
+header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: *");
 
-$servername = "sql.10.svpj.link"; // Zmień na odpowiednie dane serwera
-$username = "db_105690"; // Zmień na odpowiednie dane
-$password = "NVzd08ODhiBV"; // Zmień na odpowiednie dane
-$dbname = "db_105690"; // Zmień na odpowiednią nazwę bazy danych
+$servername = "localhost"; // Zmień na nazwę swojego serwera
+$username = "root"; // Zmień na swoją nazwę użytkownika
+$password = ""; // Zmień na swoje hasło
+$dbname = "your_database_name"; // Zmień na nazwę swojej bazy danych
 
-// Tworzenie połączenia
+// Utworzenie połączenia z bazą danych
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Sprawdzanie połączenia
+// Sprawdzenie połączenia
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Pobranie akcji z żądania
-$action = isset($_GET['action']) ? $_GET['action'] : '';
+$action = $_GET['action'] ?? '';
 
 switch ($action) {
     case 'get_patrols':
-        get_patrols($conn);
+        getPatrols($conn);
         break;
     case 'update_patrol_status':
-        update_patrol_status($conn);
+        updatePatrolStatus($conn);
         break;
     case 'send_message':
-        send_message($conn);
+        sendMessage($conn);
         break;
     case 'get_messages':
-        get_messages($conn);
+        getMessages($conn);
         break;
     case 'get_interwencje':
-        get_interwencje($conn);
+        getInterwencje($conn);
         break;
     default:
-        echo json_encode(array('error' => 'Invalid action'));
+        echo json_encode(["error" => "Invalid action"]);
         break;
 }
 
 $conn->close();
 
-function get_patrols($conn) {
-    $sql = "SELECT kryptonim FROM patrols"; // Zmień na odpowiednią tabelę
+function getPatrols($conn) {
+    $sql = "SELECT kryptonim FROM patrole";
     $result = $conn->query($sql);
 
-    $patrols = array();
     if ($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
-            $patrols[] = $row;
+        $patrols = [];
+        while ($row = $result->fetch_assoc()) {
+            $patrols[] = $row['kryptonim'];
         }
+        echo json_encode($patrols);
+    } else {
+        echo json_encode([]);
     }
-
-    echo json_encode($patrols);
 }
 
-function update_patrol_status($conn) {
-    $kryptonim = $_GET['kryptonim'];
-    $status = $_GET['status'];
+function updatePatrolStatus($conn) {
+    $kryptonim = $_GET['kryptonim'] ?? '';
+    $status = $_GET['status'] ?? '';
 
-    $sql = "UPDATE patrols SET status = ? WHERE kryptonim = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ss", $status, $kryptonim);
-    $stmt->execute();
+    if ($kryptonim && $status) {
+        $sql = "UPDATE patrole SET status = ? WHERE kryptonim = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ss", $status, $kryptonim);
+        $stmt->execute();
 
-    $response = array('success' => $stmt->affected_rows > 0);
-    echo json_encode($response);
-
-    $stmt->close();
-}
-
-function send_message($conn) {
-    $nadawca = $_POST['nadawca'];
-    $odbiorca = $_POST['odbiorca'];
-    $tresc = $_POST['tresc'];
-
-    $sql = "INSERT INTO messages (nadawca, odbiorca, tresc, timestamp) VALUES (?, ?, ?, NOW())";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sss", $nadawca, $odbiorca, $tresc);
-    $stmt->execute();
-
-    $response = array('success' => $stmt->affected_rows > 0);
-    echo json_encode($response);
-
-    $stmt->close();
-}
-
-function get_messages($conn) {
-    $kryptonim = $_GET['kryptonim'];
-
-    $sql = "SELECT id, nadawca, tresc FROM messages WHERE odbiorca = ? ORDER BY timestamp DESC";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $kryptonim);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $messages = array();
-    while($row = $result->fetch_assoc()) {
-        $messages[] = $row;
+        if ($stmt->affected_rows > 0) {
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["success" => false, "error" => "No rows updated"]);
+        }
+        $stmt->close();
+    } else {
+        echo json_encode(["success" => false, "error" => "Missing parameters"]);
     }
-
-    echo json_encode($messages);
-
-    $stmt->close();
 }
 
-function get_interwencje($conn) {
-    $kryptonim = $_GET['kryptonim'];
+function sendMessage($conn) {
+    $nadawca = $_POST['nadawca'] ?? '';
+    $odbiorca = $_POST['odbiorca'] ?? '';
+    $tresc = $_POST['tresc'] ?? '';
 
-    $sql = "SELECT id FROM interwencje WHERE kryptonim = ? AND status = 'Nowa'";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $kryptonim);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    if ($nadawca && $odbiorca && $tresc) {
+        $sql = "INSERT INTO komunikaty (nadawca, odbiorca, tresc) VALUES (?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sss", $nadawca, $odbiorca, $tresc);
+        $stmt->execute();
 
-    $interwencje = array();
-    while($row = $result->fetch_assoc()) {
-        $interwencje[] = $row;
+        if ($stmt->affected_rows > 0) {
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Message not sent"]);
+        }
+        $stmt->close();
+    } else {
+        echo json_encode(["success" => false, "error" => "Missing parameters"]);
     }
+}
 
-    echo json_encode($interwencje);
+function getMessages($conn) {
+    $kryptonim = $_GET['kryptonim'] ?? '';
 
-    $stmt->close();
+    if ($kryptonim) {
+        $sql = "SELECT * FROM komunikaty WHERE odbiorca = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $kryptonim);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+            $messages = [];
+            while ($row = $result->fetch_assoc()) {
+                $messages[] = $row;
+            }
+            echo json_encode($messages);
+        } else {
+            echo json_encode([]);
+        }
+        $stmt->close();
+    } else {
+        echo json_encode(["error" => "Missing parameters"]);
+    }
+}
+
+function getInterwencje($conn) {
+    $kryptonim = $_GET['kryptonim'] ?? '';
+
+    if ($kryptonim) {
+        $sql = "SELECT * FROM interwencje WHERE kryptonim = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $kryptonim);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+            $interwencje = [];
+            while ($row = $result->fetch_assoc()) {
+                $interwencje[] = $row;
+            }
+            echo json_encode($interwencje);
+        } else {
+            echo json_encode([]);
+        }
+        $stmt->close();
+    } else {
+        echo json_encode(["error" => "Missing parameters"]);
+    }
 }
 ?>
